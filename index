@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Assbutt in Space</title>
+
+<script src="https://code.createjs.com/createjs-2015.11.26.min.js"></script>
+<script>var zon = true; // true for comments from zim code</script>
+<script src="https://d309knd7es5f10.cloudfront.net/zim_4.3.1.js"></script>
+
+<style>
+  body {margin:0px; padding:0px; background-color:black;}
+  #myCanvas {position:absolute; background-color:black;}
+</style>
+
+<script>
+
+    var scaling = "fit"; // this will resize to fit inside the screen dimensions
+    var width = 1024;
+    var height = 768;
+    var color = "black";
+    var frame = new zim.Frame(scaling, width, height, color);
+
+    frame.on("ready", function() {
+
+    	var stage = frame.stage;
+    	var stageW = frame.width;
+    	var stageH = frame.height;
+
+    	frame.loadAssets([
+    		"stars.png",
+    		"blue.png",
+    		"escape-ship.png",
+            "asteroid_zim.png",
+            "LevelFour.png"
+    	], "assets/");
+        
+        var check = true;
+
+    	frame.on("complete", function() {
+
+            var spaceTravels = new zim.Container(stageW, stageH);
+            spaceTravels.center(stage);
+            spaceTravels.alpha = 0;
+            
+            function fadeInFrame(ev){
+              zim.animate(ev, {alpha:1}, 1200);  
+            }
+            
+            fadeInFrame(spaceTravels);
+            
+    		var allSpace = new zim.Container(stageW, stageH);
+    		spaceTravels.addChild(allSpace);
+            
+            var dodge = new zim.Container(stageW, stageH);
+            spaceTravels.addChild(dodge);
+            
+    		var blue = frame.asset("blue.png");
+            blue.center(allSpace);
+    		var background = new zim.Scroller({
+                backing:blue, 
+                speed:-1, 
+                horizontal:false, 
+                gapFix:.5
+            });
+
+    		var stars = frame.asset("stars.png");
+    		stars.center(allSpace);
+            stars.alpha = .8;
+    		var starySky = new zim.Scroller({
+                backing:stars,
+                speed:-3.8,
+                gapFix:1,
+                horizontal:false
+            });		
+            
+    		var ship = frame.asset("escape-ship.png");
+    		ship.scale(.27);
+            dodge.addChild(ship);
+    		ship.center(dodge);
+            ship.y = 600;
+            
+            stage.on("stagemousemove", startDodging, null, true);
+            function startDodging(){
+                zim.Ticker.add(animateFall, stage);
+                zim.animate(ship, {y:100}, 25000, null);
+                dropAsteroids();
+            }
+            
+            var spaceRocks = new zim.Container();
+            dodge.addChild(spaceRocks);
+            
+            spaceRocks.on("click", function(){
+                zog("I can just dodge these...");
+            });
+            
+            function dropAsteroids(){
+                setTimeout(function(){
+                    requestAnimationFrame(dropAsteroids);
+                    var asteroid = frame.asset("asteroid_zim.png").clone();
+                    asteroid.regX = asteroid.width/2;
+                    asteroid.regY = asteroid.height;
+                    asteroid.x = zim.rand(asteroid.width/2, stageW - asteroid.width/2);
+                    spaceRocks.addChild(asteroid);
+                }, zim.rand(1000, 2000));
+            }
+            
+            var dampShipAcross = new zim.Damp(null, .25);
+            dampShipAcross.immediate(ship.x);
+            
+            var fallSpeed = 7;
+            
+            function animateFall(){
+                ship.x = dampShipAcross.convert(stage.mouseX - 70);
+                            
+                var asteroid;
+                for(var i = 0; i<spaceRocks.numChildren; i++ ){
+                    asteroid = spaceRocks.getChildAt(i);
+                    asteroid.y += fallSpeed;
+                    if(ship.hitTestBounds(asteroid)&&ship.y>100){
+                        explode(asteroid);
+                        zog("I'm hit!");
+                        zog("'gotta be careful");
+                        ship.y = 600;
+                        zim.animate(ship, {y:100}, 25000);
+                    }
+                    if(asteroid.y >= stageH + 2000){
+                        explode(asteroid);
+                    }
+                }
+                
+                if(ship.y <= 100 && check==true){
+                    endLevel(spaceTravels);
+                    zog("We win!");
+                    check = false; 
+                }
+            }
+        
+            function explode(asteroid){
+                spaceRocks.removeChild(asteroid);
+            }
+    	});
+
+        var button = new zim.Button(290, 50, " ");
+        
+        function endLevel(ev) {
+            zim.animate(ev, {alpha:0}, 2000, null, allDone);
+            function allDone() {
+                stage.removeChild(ev);
+                var storylog5 = frame.asset("LevelFour.png");
+                stage.addChild(storylog5);
+                var startlevel = frame.asset ("startlevel.png");
+                stage.addChild(startlevel);
+                startlevel.alpha = .8;
+                startlevel.x = 350;
+                startlevel.y = 605;
+                stage.addChild(button);
+                button.alpha = .1;
+                button.x = 370;
+                button.y = 630;
+            }
+        }
+
+    	stage.update();
+    }); 
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimal-ui" />
+</head>
+<body>
+</body>
+</html>
